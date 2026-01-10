@@ -1,6 +1,6 @@
 {
   "name": "@reductstore/reduct-query-monaco",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Monaco completion and helpers for ReductStore query language",
   "keywords": [
     "monaco",
@@ -19,13 +19,14 @@
   "license": "MIT",
   "author": "AnthonyCvn",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
