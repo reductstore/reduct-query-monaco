@@ -1,0 +1,50 @@
+{
+  "name": "@reductstore/reduct-query-monaco",
+  "version": "1.0.0",
+  "description": "Monaco completion and helpers for ReductStore query language",
+  "keywords": [
+    "monaco",
+    "autocomplete",
+    "reductstore",
+    "query"
+  ],
+  "homepage": "https://github.com/reductstore/reduct-query-monaco#readme",
+  "bugs": {
+    "url": "https://github.com/reductstore/reduct-query-monaco/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reductstore/reduct-query-monaco.git"
+  },
+  "license": "MIT",
+  "author": "AnthonyCvn",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "monaco-editor": ">=0.40.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.0"
+  }
+}
