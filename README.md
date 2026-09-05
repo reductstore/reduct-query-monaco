@@ -74,6 +74,27 @@ Returns a Monaco completion provider with intelligent autocomplete for:
 }
 ```
 
+## SQL completion provider (ReductSelect extension)
+
+The [ReductSelect extension](https://www.reduct.store/docs/extensions/official/select-ext) accepts a SQL query in the `sql` field of `#ext.select`. `getSqlCompletionProvider()` provides autocomplete for that dialect.
+
+```typescript
+import * as monaco from 'monaco-editor';
+import { getSqlCompletionProvider } from '@reductstore/reduct-query-monaco';
+
+monaco.languages.register({ id: 'reduct-select-sql' });
+monaco.languages.registerCompletionItemProvider('reduct-select-sql', getSqlCompletionProvider());
+```
+
+Only the syntax documented for ReductSelect is covered: `SELECT ... FROM ENTRY() WHERE ...`, dotted paths for nested fields (`temp.status`), `AS` aliasing, headerless CSV columns (`column_0`, `column_1`, ...), and the basic comparison operators `=`, `<`, `>`. `JOIN`, `GROUP BY`, `ORDER BY`, aggregate functions, and logical operators are not documented for this extension and are intentionally not suggested.
+
+| Export                     | Description                                  |
+| -------------------------- | -------------------------------------------- |
+| `SQL_KEYWORDS`             | `SELECT`, `FROM`, `WHERE`, `AS`              |
+| `SQL_FUNCTIONS`            | `ENTRY()`                                    |
+| `SQL_COMPARISON_OPERATORS` | `=`, `<`, `>`                                |
+| `SQL_EXAMPLES`             | Complete SQL query examples for quick starts |
+
 ## License
 
 MIT

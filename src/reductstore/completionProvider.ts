@@ -8,36 +8,13 @@ import {
 } from './operators';
 import { DIRECTIVES } from './directives';
 import { EXAMPLES } from './examples';
-
-interface MonacoModel {
-  getLineContent(lineNumber: number): string;
-}
-
-interface MonacoPosition {
-  lineNumber: number;
-  column: number;
-}
-
-interface MonacoRange {
-  startLineNumber: number;
-  endLineNumber: number;
-  startColumn: number;
-  endColumn: number;
-}
-
-interface MonacoCompletionItem {
-  label: string;
-  kind: number;
-  insertText: string;
-  detail?: string;
-  documentation?: string;
-  range: MonacoRange;
-  sortText?: string;
-}
-
-interface MonacoCompletionResult {
-  suggestions: MonacoCompletionItem[];
-}
+import {
+  MonacoModel,
+  MonacoPosition,
+  MonacoRange,
+  MonacoCompletionItem,
+  MonacoCompletionResult,
+} from './types';
 
 export const getCompletionProvider = () => {
   return {
