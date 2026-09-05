@@ -33,9 +33,11 @@ export const getSqlCompletionProvider = () => {
       const isDocumentStart = model.getLineCount() === 1 && model.getLineContent(1).length === 0;
       const isInsideString = (textBeforeCursor.match(/'/g) || []).length % 2 === 1;
 
-      // Build suggestions based on context
+      // Build suggestions based on context. "." is treated as a separator (not part of
+      // the word) so that completing right after "temp." only replaces the segment being
+      // typed, not the whole dotted path already typed before it.
       const suggestions: MonacoCompletionItem[] = [];
-      const range = getWordRange(model, position, /[\w.]/);
+      const range = getWordRange(model, position, /\w/);
 
       // 1. When document is completely empty (suggest complete examples)
       if (isDocumentStart) {

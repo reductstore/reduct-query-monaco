@@ -180,4 +180,17 @@ describe('getSqlCompletionProvider', () => {
       expect(labels).not.toContain(example.name);
     });
   });
+
+  it('should not include the dotted-path prefix in the replacement range after a dot', () => {
+    const provider = getSqlCompletionProvider();
+    const line = 'SELECT temp.';
+    const result = provider.provideCompletionItems(makeModel([line]), {
+      lineNumber: 1,
+      column: line.length + 1,
+    });
+    result.suggestions.forEach((s) => {
+      expect(s.range.startColumn).toBe(line.length + 1);
+      expect(s.range.endColumn).toBe(line.length + 1);
+    });
+  });
 });
