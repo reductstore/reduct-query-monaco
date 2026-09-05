@@ -4,10 +4,10 @@ import { SQL_EXAMPLES } from './examples';
 import {
   MonacoModel,
   MonacoPosition,
-  MonacoRange,
   MonacoCompletionItem,
   MonacoCompletionResult,
 } from '../types';
+import { getWordRange } from '../wordRange';
 
 export const getSqlCompletionProvider = () => {
   return {
@@ -27,28 +27,15 @@ export const getSqlCompletionProvider = () => {
       const currentLine = model.getLineContent(position.lineNumber);
       textBeforeCursor += currentLine.substring(0, position.column - 1);
 
-      const isDocumentStart = textBeforeCursor.trim() === '' && position.lineNumber === 1;
+      // "Document start" means the model itself is empty, not just blank before the
+      // cursor - otherwise resetting the cursor to (1, 1) in a pre-filled editor would
+      // wrongly re-trigger the full example snippets and insert them into existing text
+      const isDocumentStart = model.getLineCount() === 1 && model.getLineContent(1).length === 0;
       const isInsideString = (textBeforeCursor.match(/'/g) || []).length % 2 === 1;
-
-      // Calculate proper range to replace partial text
-      // Find the start of the current word being typed
-      let wordStart = position.column - 1;
-      while (wordStart > 0) {
-        const char = currentLine.charAt(wordStart - 1);
-        if (!/[\w.]/.test(char)) {
-          break;
-        }
-        wordStart--;
-      }
 
       // Build suggestions based on context
       const suggestions: MonacoCompletionItem[] = [];
-      const range: MonacoRange = {
-        startLineNumber: position.lineNumber,
-        endLineNumber: position.lineNumber,
-        startColumn: wordStart + 1,
-        endColumn: position.column,
-      };
+      const range = getWordRange(model, position, /[\w.]/);
 
       // 1. When document is completely empty (suggest complete examples)
       if (isDocumentStart) {
@@ -71,13 +58,17 @@ export const getSqlCompletionProvider = () => {
         return { suggestions: [] };
       }
 
-      // Find which clause the cursor is currently in (word-boundary match,
-      // so identifiers like "from_id" or "elsewhere" aren't mistaken for keywords)
+      // Find which clause the cursor is currently in (word-boundary match on text with
+      // closed string literals blanked out, so identifiers like "from_id" and quoted
+      // values like 'Selected from cache' aren't mistaken for keywords)
+      const textWithoutStrings = textBeforeCursor.replace(/'[^']*'/g, (match) =>
+        ' '.repeat(match.length),
+      );
       const lastKeywordIndex = (keyword: string): number => {
         const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
         let lastIndex = -1;
         let match: RegExpExecArray | null;
-        while ((match = regex.exec(textBeforeCursor)) !== null) {
+        while ((match = regex.exec(textWithoutStrings)) !== null) {
           lastIndex = match.index;
         }
         return lastIndex;

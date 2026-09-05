@@ -1,5 +1,6 @@
 export interface MonacoModel {
   getLineContent(lineNumber: number): string;
+  getLineCount(): number;
 }
 
 export interface MonacoPosition {

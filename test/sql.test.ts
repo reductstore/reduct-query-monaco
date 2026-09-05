@@ -27,6 +27,7 @@ beforeAll(() => {
 function makeModel(lines: string[]) {
   return {
     getLineContent: (lineNumber: number) => lines[lineNumber - 1] ?? '',
+    getLineCount: () => lines.length,
   };
 }
 
@@ -159,5 +160,24 @@ describe('getSqlCompletionProvider', () => {
     const labels = result.suggestions.map((s) => s.label);
     expect(labels).toContain('=');
     expect(labels).not.toContain('*');
+  });
+
+  it('should stay in the WHERE zone when a string value contains a keyword-like word', () => {
+    const result = complete("SELECT * FROM ENTRY() WHERE message = 'Selected from cache' ");
+    const labels = result.suggestions.map((s) => s.label);
+    expect(labels).toContain('=');
+    expect(labels).not.toContain('*');
+  });
+
+  it('should not treat the cursor at the start of a pre-filled document as document start', () => {
+    const provider = getSqlCompletionProvider();
+    const result = provider.provideCompletionItems(makeModel(['SELECT * FROM ENTRY()']), {
+      lineNumber: 1,
+      column: 1,
+    });
+    const labels = result.suggestions.map((s) => s.label);
+    SQL_EXAMPLES.forEach((example) => {
+      expect(labels).not.toContain(example.name);
+    });
   });
 });
