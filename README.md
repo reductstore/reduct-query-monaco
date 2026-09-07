@@ -88,12 +88,11 @@ monaco.languages.registerCompletionItemProvider('reduct-select-sql', getSqlCompl
 
 Only the syntax documented for ReductSelect is covered: `SELECT ... FROM ENTRY() WHERE ...`, dotted paths for nested fields (`temp.status`), `AS` aliasing, headerless CSV columns (`column_0`, `column_1`, ...), and the basic comparison operators `=`, `<`, `>`. `JOIN`, `GROUP BY`, `ORDER BY`, aggregate functions, and logical operators are not documented for this extension and are intentionally not suggested.
 
-| Export                     | Description                                  |
-| -------------------------- | -------------------------------------------- |
-| `SQL_KEYWORDS`             | `SELECT`, `FROM`, `WHERE`, `AS`              |
-| `SQL_FUNCTIONS`            | `ENTRY()`                                    |
-| `SQL_COMPARISON_OPERATORS` | `=`, `<`, `>`                                |
-| `SQL_EXAMPLES`             | Complete SQL query examples for quick starts |
+| Export                     | Description                     |
+| -------------------------- | ------------------------------- |
+| `SQL_KEYWORDS`             | `SELECT`, `FROM`, `WHERE`, `AS` |
+| `SQL_FUNCTIONS`            | `ENTRY()`                       |
+| `SQL_COMPARISON_OPERATORS` | `=`, `<`, `>`                   |
 
 ## License
 

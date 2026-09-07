@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Monaco completion provider for the SQL dialect used by the ReductSelect extension (`getSqlCompletionProvider`)
 - SQL keywords (`SELECT`, `FROM`, `WHERE`, `AS`), the `ENTRY()` table function, and the documented comparison operators (`=`, `<`, `>`)
-- Complete SQL query examples for quick starts (`SQL_EXAMPLES`)
 
 ## [1.0.1] - 2026-01-10
 

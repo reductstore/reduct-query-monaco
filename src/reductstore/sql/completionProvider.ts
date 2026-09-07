@@ -1,6 +1,5 @@
 import { SQL_KEYWORDS, SQL_FUNCTIONS } from './keywords';
 import { SQL_COMPARISON_OPERATORS } from './operators';
-import { SQL_EXAMPLES } from './examples';
 import {
   MonacoModel,
   MonacoPosition,
@@ -27,10 +26,6 @@ export const getSqlCompletionProvider = () => {
       const currentLine = model.getLineContent(position.lineNumber);
       textBeforeCursor += currentLine.substring(0, position.column - 1);
 
-      // "Document start" means the model itself is empty, not just blank before the
-      // cursor - otherwise resetting the cursor to (1, 1) in a pre-filled editor would
-      // wrongly re-trigger the full example snippets and insert them into existing text
-      const isDocumentStart = model.getLineCount() === 1 && model.getLineContent(1).length === 0;
       const isInsideString = (textBeforeCursor.match(/'/g) || []).length % 2 === 1;
 
       // Build suggestions based on context. "." is treated as a separator (not part of
@@ -39,23 +34,7 @@ export const getSqlCompletionProvider = () => {
       const suggestions: MonacoCompletionItem[] = [];
       const range = getWordRange(model, position, /\w/);
 
-      // 1. When document is completely empty (suggest complete examples)
-      if (isDocumentStart) {
-        SQL_EXAMPLES.forEach((example, index) => {
-          suggestions.push({
-            label: example.name,
-            kind: CompletionItemKind.Snippet,
-            insertText: example.insertText,
-            detail: example.description,
-            documentation: 'Complete SQL query example',
-            range,
-            sortText: `0${index.toString().padStart(2, '0')}`,
-          });
-        });
-        return { suggestions };
-      }
-
-      // 2. When typing inside a string literal (no keyword suggestions)
+      // 1. When typing inside a string literal (no keyword suggestions)
       if (isInsideString) {
         return { suggestions: [] };
       }
@@ -84,7 +63,7 @@ export const getSqlCompletionProvider = () => {
       const inSelectZone = !inWhereZone && !inFromZone && lastSelect !== -1;
       const noZoneDetected = !inWhereZone && !inFromZone && !inSelectZone;
 
-      // 3. When in the column list (after SELECT, before FROM)
+      // 2. When in the column list (after SELECT, before FROM)
       if (inSelectZone) {
         suggestions.push(
           {
@@ -106,7 +85,7 @@ export const getSqlCompletionProvider = () => {
         );
       }
 
-      // 4. When in the condition (after WHERE)
+      // 3. When in the condition (after WHERE)
       if (inWhereZone) {
         // Comparison operators (priority 1XX)
         SQL_COMPARISON_OPERATORS.forEach((op, index) => {
@@ -141,7 +120,7 @@ export const getSqlCompletionProvider = () => {
         );
       }
 
-      // 5. ENTRY() table function (priority 1XX right after FROM; 9XX before any clause
+      // 4. ENTRY() table function (priority 1XX right after FROM; 9XX before any clause
       // has been typed, so keywords are suggested first; 8XX as a general fallback otherwise)
       const functionPriority = inFromZone ? '1' : noZoneDetected ? '9' : '8';
       SQL_FUNCTIONS.forEach((fn, index) => {
@@ -155,7 +134,7 @@ export const getSqlCompletionProvider = () => {
         });
       });
 
-      // 6. Keywords (priority 1XX before any clause has been typed, so SELECT comes
+      // 5. Keywords (priority 1XX before any clause has been typed, so SELECT comes
       // first; 9XX as a general fallback once a clause is already in progress)
       const keywordPriority = noZoneDetected ? '1' : '9';
       SQL_KEYWORDS.forEach((keyword, index) => {

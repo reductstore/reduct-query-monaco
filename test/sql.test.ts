@@ -3,7 +3,6 @@ import {
   SQL_KEYWORDS,
   SQL_FUNCTIONS,
   SQL_COMPARISON_OPERATORS,
-  SQL_EXAMPLES,
   getSqlCompletionProvider,
 } from '../src/reductstore/index';
 
@@ -80,22 +79,6 @@ describe('sql operators', () => {
   });
 });
 
-describe('sql examples', () => {
-  it('should export examples', () => {
-    expect(SQL_EXAMPLES).toBeDefined();
-    expect(SQL_EXAMPLES.length).toBeGreaterThan(0);
-  });
-
-  it('all examples should have required fields and reference ENTRY()', () => {
-    SQL_EXAMPLES.forEach((ex) => {
-      expect(ex.name).toBeDefined();
-      expect(ex.description).toBeDefined();
-      expect(ex.insertText).toBeDefined();
-      expect(ex.insertText).toContain('FROM ENTRY()');
-    });
-  });
-});
-
 describe('getSqlCompletionProvider', () => {
   it('should return a completion provider', () => {
     const provider = getSqlCompletionProvider();
@@ -104,12 +87,13 @@ describe('getSqlCompletionProvider', () => {
     expect(typeof provider.provideCompletionItems).toBe('function');
   });
 
-  it('should suggest complete examples on an empty document', () => {
+  it('should suggest the usual keywords and ENTRY() (SELECT first) on an empty document', () => {
     const result = complete('');
-    const labels = result.suggestions.map((s) => s.label);
-    SQL_EXAMPLES.forEach((example) => {
-      expect(labels).toContain(example.name);
-    });
+    const labels = result.suggestions.map((s) => s.label).sort();
+    expect(labels).toEqual(['AS', 'ENTRY()', 'FROM', 'SELECT', 'WHERE'].sort());
+    const select = result.suggestions.find((s) => s.label === 'SELECT');
+    const entry = result.suggestions.find((s) => s.label === 'ENTRY()');
+    expect(select!.sortText! < entry!.sortText!).toBe(true);
   });
 
   it('should suggest * and column_0 after SELECT', () => {
@@ -167,18 +151,6 @@ describe('getSqlCompletionProvider', () => {
     const labels = result.suggestions.map((s) => s.label);
     expect(labels).toContain('=');
     expect(labels).not.toContain('*');
-  });
-
-  it('should not treat the cursor at the start of a pre-filled document as document start', () => {
-    const provider = getSqlCompletionProvider();
-    const result = provider.provideCompletionItems(makeModel(['SELECT * FROM ENTRY()']), {
-      lineNumber: 1,
-      column: 1,
-    });
-    const labels = result.suggestions.map((s) => s.label);
-    SQL_EXAMPLES.forEach((example) => {
-      expect(labels).not.toContain(example.name);
-    });
   });
 
   it('should not include the dotted-path prefix in the replacement range after a dot', () => {
