@@ -86,13 +86,17 @@ monaco.languages.register({ id: 'reduct-select-sql' });
 monaco.languages.registerCompletionItemProvider('reduct-select-sql', getSqlCompletionProvider());
 ```
 
-Only the syntax documented for ReductSelect is covered: `SELECT ... FROM ENTRY() WHERE ...`, dotted paths for nested fields (`temp.status`), `AS` aliasing, headerless CSV columns (`column_0`, `column_1`, ...), and the basic comparison operators `=`, `<`, `>`. `JOIN`, `GROUP BY`, `ORDER BY`, aggregate functions, and logical operators are not documented for this extension and are intentionally not suggested.
+The general SQL grammar (clauses, operators) follows [Apache DataFusion's SQL dialect](https://datafusion.apache.org/user-guide/sql/index.html), since that's the engine ReductSelect runs on. `ENTRY()`, dotted paths for nested fields (`temp.status`), and headerless CSV columns (`column_0`, `column_1`, ...) are ReductStore-specific and follow the [ReductSelect extension docs](https://www.reduct.store/docs/extensions/official/select-ext) instead.
 
-| Export                     | Description                     |
-| -------------------------- | ------------------------------- |
-| `SQL_KEYWORDS`             | `SELECT`, `FROM`, `WHERE`, `AS` |
-| `SQL_FUNCTIONS`            | `ENTRY()`                       |
-| `SQL_COMPARISON_OPERATORS` | `=`, `<`, `>`                   |
+This first pass covers the full clause grammar (`WITH`, `SELECT`/`DISTINCT`, `FROM`, joins, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`/`OFFSET`, set operations) and the full operator set (comparison, logical, and filter operators). A curated catalog of common SQL functions (aggregates, string, date, etc.) is planned as a follow-up rather than modeled here, since the scope of that catalog is still being decided.
+
+| Export                     | Description                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `SQL_CLAUSES`              | `WITH`, `SELECT`, `DISTINCT`, `FROM`, join variants, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`, `OFFSET`, `AS`, set operations |
+| `SQL_FUNCTIONS`            | `ENTRY()` (ReductStore-specific)                                                                                                        |
+| `SQL_COMPARISON_OPERATORS` | `=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`                                                                                                   |
+| `SQL_LOGICAL_OPERATORS`    | `AND`, `OR`, `NOT`                                                                                                                      |
+| `SQL_FILTER_OPERATORS`     | `BETWEEN`, `IN`, `LIKE`, `ILIKE`, `IS NULL`, `IS NOT NULL`                                                                              |
 
 ## License
 

@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Monaco completion provider for the SQL dialect used by the ReductSelect extension (`getSqlCompletionProvider`)
-- SQL keywords (`SELECT`, `FROM`, `WHERE`, `AS`), the `ENTRY()` table function, and the documented comparison operators (`=`, `<`, `>`)
+- Monaco completion provider for SQL (`getSqlCompletionProvider`), based on [Apache DataFusion's SQL dialect](https://datafusion.apache.org/user-guide/sql/index.html) plus ReductStore-specific extensions from [ReductSelect](https://www.reduct.store/docs/extensions/official/select-ext)
+- Full clause grammar (`SQL_CLAUSES`): `WITH`, `SELECT`/`DISTINCT`, `FROM`, joins, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`/`OFFSET`, `AS`, set operations
+- Full operator set: comparison (`SQL_COMPARISON_OPERATORS`), logical (`SQL_LOGICAL_OPERATORS`), and filter (`SQL_FILTER_OPERATORS`)
+- The `ENTRY()` table function (`SQL_FUNCTIONS`)
 
 ## [1.0.1] - 2026-01-10
 

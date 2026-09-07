@@ -1,0 +1,62 @@
+export const SQL_CLAUSES = [
+  { name: 'WITH', description: 'Define a common table expression (CTE)', insertText: 'WITH ' },
+  { name: 'SELECT', description: 'Select columns to return', insertText: 'SELECT ' },
+  { name: 'DISTINCT', description: 'Remove duplicate rows', insertText: 'DISTINCT ' },
+  { name: 'FROM', description: 'Specify the data source', insertText: 'FROM ' },
+  { name: 'JOIN', description: 'Join another table', insertText: 'JOIN ' },
+  {
+    name: 'INNER JOIN',
+    description: 'Join keeping only matching rows',
+    insertText: 'INNER JOIN ',
+  },
+  {
+    name: 'LEFT JOIN',
+    description: 'Join keeping all rows from the left side',
+    insertText: 'LEFT JOIN ',
+  },
+  {
+    name: 'RIGHT JOIN',
+    description: 'Join keeping all rows from the right side',
+    insertText: 'RIGHT JOIN ',
+  },
+  {
+    name: 'FULL JOIN',
+    description: 'Join keeping all rows from both sides',
+    insertText: 'FULL JOIN ',
+  },
+  {
+    name: 'CROSS JOIN',
+    description: 'Join producing the Cartesian product',
+    insertText: 'CROSS JOIN ',
+  },
+  { name: 'ON', description: 'Specify the join condition', insertText: 'ON ' },
+  { name: 'WHERE', description: 'Filter rows by condition', insertText: 'WHERE ' },
+  { name: 'GROUP BY', description: 'Group rows sharing the same values', insertText: 'GROUP BY ' },
+  { name: 'HAVING', description: 'Filter groups by condition', insertText: 'HAVING ' },
+  { name: 'ORDER BY', description: 'Sort the result set', insertText: 'ORDER BY ' },
+  { name: 'ASC', description: 'Sort in ascending order', insertText: 'ASC' },
+  { name: 'DESC', description: 'Sort in descending order', insertText: 'DESC' },
+  { name: 'LIMIT', description: 'Limit the number of rows returned', insertText: 'LIMIT ' },
+  {
+    name: 'OFFSET',
+    description: 'Skip a number of rows before returning results',
+    insertText: 'OFFSET ',
+  },
+  { name: 'AS', description: 'Alias a column or table', insertText: 'AS ' },
+  { name: 'UNION', description: 'Combine results, removing duplicates', insertText: 'UNION ' },
+  {
+    name: 'UNION ALL',
+    description: 'Combine results, keeping duplicates',
+    insertText: 'UNION ALL ',
+  },
+  {
+    name: 'INTERSECT',
+    description: 'Keep only rows present in both results',
+    insertText: 'INTERSECT ',
+  },
+  {
+    name: 'EXCEPT',
+    description: 'Keep rows from the first result not present in the second',
+    insertText: 'EXCEPT ',
+  },
+];
