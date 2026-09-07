@@ -82,6 +82,7 @@ export const getSqlCompletionProvider = () => {
       const inWhereZone = lastWhere !== -1 && lastWhere > lastFrom && lastWhere > lastSelect;
       const inFromZone = !inWhereZone && lastFrom !== -1 && lastFrom > lastSelect;
       const inSelectZone = !inWhereZone && !inFromZone && lastSelect !== -1;
+      const noZoneDetected = !inWhereZone && !inFromZone && !inSelectZone;
 
       // 3. When in the column list (after SELECT, before FROM)
       if (inSelectZone) {
@@ -140,8 +141,9 @@ export const getSqlCompletionProvider = () => {
         );
       }
 
-      // 5. ENTRY() table function (priority 1XX after FROM, 8XX as a general fallback)
-      const functionPriority = inFromZone ? '1' : '8';
+      // 5. ENTRY() table function (priority 1XX right after FROM; 9XX before any clause
+      // has been typed, so keywords are suggested first; 8XX as a general fallback otherwise)
+      const functionPriority = inFromZone ? '1' : noZoneDetected ? '9' : '8';
       SQL_FUNCTIONS.forEach((fn, index) => {
         suggestions.push({
           label: fn.name,
@@ -153,7 +155,9 @@ export const getSqlCompletionProvider = () => {
         });
       });
 
-      // 6. Keywords as a general fallback (priority 9XX)
+      // 6. Keywords (priority 1XX before any clause has been typed, so SELECT comes
+      // first; 9XX as a general fallback once a clause is already in progress)
+      const keywordPriority = noZoneDetected ? '1' : '9';
       SQL_KEYWORDS.forEach((keyword, index) => {
         suggestions.push({
           label: keyword.name,
@@ -161,7 +165,7 @@ export const getSqlCompletionProvider = () => {
           insertText: keyword.insertText,
           detail: keyword.description,
           range,
-          sortText: `9${index.toString().padStart(2, '0')}`,
+          sortText: `${keywordPriority}${index.toString().padStart(2, '0')}`,
         });
       });
 

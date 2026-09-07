@@ -193,4 +193,13 @@ describe('getSqlCompletionProvider', () => {
       expect(s.range.endColumn).toBe(line.length + 1);
     });
   });
+
+  it('should rank SELECT ahead of ENTRY() before any clause has been typed', () => {
+    const result = complete(' ');
+    const select = result.suggestions.find((s) => s.label === 'SELECT');
+    const entry = result.suggestions.find((s) => s.label === 'ENTRY()');
+    expect(select).toBeDefined();
+    expect(entry).toBeDefined();
+    expect(select!.sortText! < entry!.sortText!).toBe(true);
+  });
 });
