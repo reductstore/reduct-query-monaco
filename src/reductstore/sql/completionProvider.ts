@@ -34,7 +34,7 @@ export const getSqlCompletionProvider = () => {
       const suggestions: MonacoCompletionItem[] = [];
       const range = getWordRange(model, position, /\w/);
 
-      // 1. When typing inside a string literal (no keyword suggestions)
+      // 1. When typing inside a string literal (no suggestions)
       if (isInsideString) {
         return { suggestions: [] };
       }
@@ -63,7 +63,27 @@ export const getSqlCompletionProvider = () => {
       const inSelectZone = !inWhereZone && !inFromZone && lastSelect !== -1;
       const noZoneDetected = !inWhereZone && !inFromZone && !inSelectZone;
 
-      // 2. When in the column list (after SELECT, before FROM)
+      const pushKeyword = (name: string, sortText: string) => {
+        const keyword = SQL_KEYWORDS.find((k) => k.name === name);
+        if (!keyword) {
+          return;
+        }
+        suggestions.push({
+          label: keyword.name,
+          kind: CompletionItemKind.Keyword,
+          insertText: keyword.insertText,
+          detail: keyword.description,
+          range,
+          sortText,
+        });
+      };
+
+      // 2. No clause typed yet: SELECT is the only valid entry point of this grammar
+      if (noZoneDetected) {
+        pushKeyword('SELECT', '100');
+      }
+
+      // 3. Column list (after SELECT, before FROM): columns, aliasing, or move to FROM
       if (inSelectZone) {
         suggestions.push(
           {
@@ -83,11 +103,27 @@ export const getSqlCompletionProvider = () => {
             sortText: '101',
           },
         );
+        pushKeyword('AS', '200');
+        pushKeyword('FROM', '201');
       }
 
-      // 3. When in the condition (after WHERE)
+      // 4. Table source (after FROM, before WHERE): only ENTRY() or move to WHERE
+      if (inFromZone) {
+        SQL_FUNCTIONS.forEach((fn, index) => {
+          suggestions.push({
+            label: fn.name,
+            kind: CompletionItemKind.Function,
+            insertText: fn.insertText,
+            detail: fn.description,
+            range,
+            sortText: `1${index.toString().padStart(2, '0')}`,
+          });
+        });
+        pushKeyword('WHERE', '200');
+      }
+
+      // 5. Condition (after WHERE): only comparison operators and value placeholders
       if (inWhereZone) {
-        // Comparison operators (priority 1XX)
         SQL_COMPARISON_OPERATORS.forEach((op, index) => {
           suggestions.push({
             label: op.name,
@@ -99,7 +135,6 @@ export const getSqlCompletionProvider = () => {
           });
         });
 
-        // Value placeholders (priority 2XX)
         suggestions.push(
           {
             label: 'String value',
@@ -119,34 +154,6 @@ export const getSqlCompletionProvider = () => {
           },
         );
       }
-
-      // 4. ENTRY() table function (priority 1XX right after FROM; 9XX before any clause
-      // has been typed, so keywords are suggested first; 8XX as a general fallback otherwise)
-      const functionPriority = inFromZone ? '1' : noZoneDetected ? '9' : '8';
-      SQL_FUNCTIONS.forEach((fn, index) => {
-        suggestions.push({
-          label: fn.name,
-          kind: CompletionItemKind.Function,
-          insertText: fn.insertText,
-          detail: fn.description,
-          range,
-          sortText: `${functionPriority}${index.toString().padStart(2, '0')}`,
-        });
-      });
-
-      // 5. Keywords (priority 1XX before any clause has been typed, so SELECT comes
-      // first; 9XX as a general fallback once a clause is already in progress)
-      const keywordPriority = noZoneDetected ? '1' : '9';
-      SQL_KEYWORDS.forEach((keyword, index) => {
-        suggestions.push({
-          label: keyword.name,
-          kind: CompletionItemKind.Keyword,
-          insertText: keyword.insertText,
-          detail: keyword.description,
-          range,
-          sortText: `${keywordPriority}${index.toString().padStart(2, '0')}`,
-        });
-      });
 
       return { suggestions };
     },

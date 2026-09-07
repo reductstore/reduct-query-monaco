@@ -87,36 +87,32 @@ describe('getSqlCompletionProvider', () => {
     expect(typeof provider.provideCompletionItems).toBe('function');
   });
 
-  it('should suggest the usual keywords and ENTRY() (SELECT first) on an empty document', () => {
-    const result = complete('');
+  function expectExactLabels(result: ReturnType<typeof complete>, expected: string[]) {
     const labels = result.suggestions.map((s) => s.label).sort();
-    expect(labels).toEqual(['AS', 'ENTRY()', 'FROM', 'SELECT', 'WHERE'].sort());
-    const select = result.suggestions.find((s) => s.label === 'SELECT');
-    const entry = result.suggestions.find((s) => s.label === 'ENTRY()');
-    expect(select!.sortText! < entry!.sortText!).toBe(true);
+    expect(labels).toEqual([...expected].sort());
+  }
+
+  it('should suggest only SELECT when no clause has been typed yet', () => {
+    expectExactLabels(complete(''), ['SELECT']);
+    expectExactLabels(complete(' '), ['SELECT']);
   });
 
-  it('should suggest * and column_0 after SELECT', () => {
-    const result = complete('SELECT ');
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('*');
-    expect(labels).toContain('column_0');
+  it('should suggest exactly *, column_0, AS and FROM in the SELECT zone', () => {
+    expectExactLabels(complete('SELECT '), ['*', 'column_0', 'AS', 'FROM']);
   });
 
-  it('should suggest ENTRY() after FROM', () => {
-    const result = complete('SELECT * FROM ');
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('ENTRY()');
+  it('should suggest exactly ENTRY() and WHERE in the FROM zone', () => {
+    expectExactLabels(complete('SELECT * FROM '), ['ENTRY()', 'WHERE']);
   });
 
-  it('should suggest comparison operators after WHERE', () => {
-    const result = complete('SELECT * FROM ENTRY() WHERE ');
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('=');
-    expect(labels).toContain('<');
-    expect(labels).toContain('>');
-    expect(labels).not.toContain('<=');
-    expect(labels).not.toContain('!=');
+  it('should suggest exactly the comparison operators and value placeholders in the WHERE zone', () => {
+    expectExactLabels(complete('SELECT * FROM ENTRY() WHERE '), [
+      '=',
+      '<',
+      '>',
+      'String value',
+      'Numeric value',
+    ]);
   });
 
   it('should not suggest keywords while typing inside a string literal', () => {
@@ -125,32 +121,31 @@ describe('getSqlCompletionProvider', () => {
   });
 
   it('should not mistake a column named from_id for the FROM keyword', () => {
-    const result = complete('SELECT from_id');
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('*');
-    expect(labels).toContain('column_0');
-    expect(labels).not.toContain('=');
+    expectExactLabels(complete('SELECT from_id'), ['*', 'column_0', 'AS', 'FROM']);
   });
 
   it('should not mistake an alias containing "where" for the WHERE keyword', () => {
-    const result = complete('SELECT temp.a AS elsewhere');
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('*');
-    expect(labels).not.toContain('=');
+    expectExactLabels(complete('SELECT temp.a AS elsewhere'), ['*', 'column_0', 'AS', 'FROM']);
   });
 
   it('should stay in the WHERE zone when a condition identifier contains "from"', () => {
-    const result = complete('SELECT * FROM ENTRY() WHERE fromStatus ');
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('=');
-    expect(labels).not.toContain('*');
+    expectExactLabels(complete('SELECT * FROM ENTRY() WHERE fromStatus '), [
+      '=',
+      '<',
+      '>',
+      'String value',
+      'Numeric value',
+    ]);
   });
 
   it('should stay in the WHERE zone when a string value contains a keyword-like word', () => {
-    const result = complete("SELECT * FROM ENTRY() WHERE message = 'Selected from cache' ");
-    const labels = result.suggestions.map((s) => s.label);
-    expect(labels).toContain('=');
-    expect(labels).not.toContain('*');
+    expectExactLabels(complete("SELECT * FROM ENTRY() WHERE message = 'Selected from cache' "), [
+      '=',
+      '<',
+      '>',
+      'String value',
+      'Numeric value',
+    ]);
   });
 
   it('should not include the dotted-path prefix in the replacement range after a dot', () => {
@@ -164,14 +159,5 @@ describe('getSqlCompletionProvider', () => {
       expect(s.range.startColumn).toBe(line.length + 1);
       expect(s.range.endColumn).toBe(line.length + 1);
     });
-  });
-
-  it('should rank SELECT ahead of ENTRY() before any clause has been typed', () => {
-    const result = complete(' ');
-    const select = result.suggestions.find((s) => s.label === 'SELECT');
-    const entry = result.suggestions.find((s) => s.label === 'ENTRY()');
-    expect(select).toBeDefined();
-    expect(entry).toBeDefined();
-    expect(select!.sortText! < entry!.sortText!).toBe(true);
   });
 });
