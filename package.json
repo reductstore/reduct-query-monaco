@@ -34,7 +34,6 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepare": "npm run build",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
     "prepublishOnly": "npm run build",

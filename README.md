@@ -82,8 +82,9 @@ The [ReductSelect extension](https://www.reduct.store/docs/extensions/official/s
 import * as monaco from 'monaco-editor';
 import { getSqlCompletionProvider } from '@reductstore/reduct-query-monaco';
 
-monaco.languages.register({ id: 'reduct-select-sql' });
-monaco.languages.registerCompletionItemProvider('reduct-select-sql', getSqlCompletionProvider());
+// Registered on Monaco's built-in "sql" language so the editor also gets
+// its built-in SQL syntax highlighting
+monaco.languages.registerCompletionItemProvider('sql', getSqlCompletionProvider());
 ```
 
 The general SQL grammar (clauses, operators) follows [Apache DataFusion's SQL dialect](https://datafusion.apache.org/user-guide/sql/index.html), since that's the engine ReductSelect runs on. `ENTRY()`, dotted paths for nested fields (`temp.status`), and headerless CSV columns (`column_0`, `column_1`, ...) are ReductStore-specific and follow the [ReductSelect extension docs](https://www.reduct.store/docs/extensions/official/select-ext) instead.
