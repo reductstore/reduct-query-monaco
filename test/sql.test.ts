@@ -146,8 +146,8 @@ describe('getSqlCompletionProvider', () => {
     expectExactLabels(complete('WITH '), ['AS']);
   });
 
-  it('should suggest exactly *, column_0, DISTINCT, AS and FROM in the SELECT zone', () => {
-    expectExactLabels(complete('SELECT '), ['*', 'column_0', 'DISTINCT', 'AS', 'FROM']);
+  it('should suggest exactly *, DISTINCT, AS and FROM in the SELECT zone', () => {
+    expectExactLabels(complete('SELECT '), ['*', 'DISTINCT', 'AS', 'FROM']);
   });
 
   it('should suggest ENTRY(), joins, and later clauses in the FROM zone', () => {
@@ -192,9 +192,8 @@ describe('getSqlCompletionProvider', () => {
     ]);
   });
 
-  it('should suggest exactly column_0, HAVING, ORDER BY, LIMIT and set operations in the GROUP BY zone', () => {
+  it('should suggest exactly HAVING, ORDER BY, LIMIT and set operations in the GROUP BY zone', () => {
     expectExactLabels(complete('SELECT * FROM ENTRY() GROUP BY '), [
-      'column_0',
       'HAVING',
       'ORDER BY',
       'LIMIT',
@@ -211,9 +210,8 @@ describe('getSqlCompletionProvider', () => {
     ]);
   });
 
-  it('should suggest exactly column_0, ASC, DESC, LIMIT and set operations in the ORDER BY zone', () => {
+  it('should suggest exactly ASC, DESC, LIMIT and set operations in the ORDER BY zone', () => {
     expectExactLabels(complete('SELECT * FROM ENTRY() ORDER BY '), [
-      'column_0',
       'ASC',
       'DESC',
       'LIMIT',
@@ -295,11 +293,11 @@ describe('getSqlCompletionProvider', () => {
 
   it('should not mistake a column named from_id for the FROM keyword', () => {
     // DISTINCT is correctly absent here: a column (from_id) has already been typed
-    expectExactLabels(complete('SELECT from_id'), ['*', 'column_0', 'AS', 'FROM']);
+    expectExactLabels(complete('SELECT from_id'), ['*', 'AS', 'FROM']);
   });
 
   it('should not mistake an alias containing "where" for the WHERE keyword', () => {
-    expectExactLabels(complete('SELECT temp.a AS elsewhere'), ['*', 'column_0', 'AS', 'FROM']);
+    expectExactLabels(complete('SELECT temp.a AS elsewhere'), ['*', 'AS', 'FROM']);
   });
 
   it('should stay in the WHERE zone when a condition identifier contains "from"', () => {

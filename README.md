@@ -87,7 +87,7 @@ import { getSqlCompletionProvider } from '@reductstore/reduct-query-monaco';
 monaco.languages.registerCompletionItemProvider('sql', getSqlCompletionProvider());
 ```
 
-The general SQL grammar (clauses, operators) follows [Apache DataFusion's SQL dialect](https://datafusion.apache.org/user-guide/sql/index.html), since that's the engine ReductSelect runs on. `ENTRY()`, dotted paths for nested fields (`temp.status`), and headerless CSV columns (`column_0`, `column_1`, ...) are ReductStore-specific and follow the [ReductSelect extension docs](https://www.reduct.store/docs/extensions/official/select-ext) instead.
+The general SQL grammar (clauses, operators) follows [Apache DataFusion's SQL dialect](https://datafusion.apache.org/user-guide/sql/index.html), since that's the engine ReductSelect runs on. `ENTRY()` and dotted paths for nested fields (`temp.status`) are ReductStore-specific and follow the [ReductSelect extension docs](https://www.reduct.store/docs/extensions/official/select-ext) instead.
 
 This first pass covers the full clause grammar (`WITH`, `SELECT`/`DISTINCT`, `FROM`, joins, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `LIMIT`/`OFFSET`, set operations) and the full operator set (comparison, logical, and filter operators). A curated catalog of common SQL functions (aggregates, string, date, etc.) is planned as a follow-up rather than modeled here, since the scope of that catalog is still being decided.
 

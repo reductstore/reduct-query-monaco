@@ -146,17 +146,6 @@ export const getSqlCompletionProvider = () => {
         });
       };
 
-      const pushColumnTarget = () => {
-        suggestions.push({
-          label: 'column_0',
-          kind: CompletionItemKind.Field,
-          insertText: 'column_0',
-          detail: 'CSV column without header (column_0, column_1, ...)',
-          range,
-          sortText: nextSortText(),
-        });
-      };
-
       const pushColumns = () => {
         suggestions.push({
           label: '*',
@@ -166,7 +155,6 @@ export const getSqlCompletionProvider = () => {
           range,
           sortText: nextSortText(),
         });
-        pushColumnTarget();
       };
 
       const pushNumericValue = () => {
@@ -308,7 +296,6 @@ export const getSqlCompletionProvider = () => {
 
         // 9. Grouping columns (after GROUP BY)
         case 'GROUP_BY':
-          pushColumnTarget();
           pushClause('HAVING');
           pushClause('ORDER BY');
           pushClause('LIMIT');
@@ -322,7 +309,6 @@ export const getSqlCompletionProvider = () => {
 
         // 11. Sort columns (after ORDER BY)
         case 'ORDER_BY':
-          pushColumnTarget();
           pushClause('ASC');
           pushClause('DESC');
           pushClause('LIMIT');
