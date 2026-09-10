@@ -16,7 +16,7 @@ export const SQL_LOGICAL_OPERATORS = [
 
 export const SQL_FILTER_OPERATORS = [
   { name: 'BETWEEN', description: 'Value is within a range', insertText: 'BETWEEN ' },
-  { name: 'IN', description: 'Value is in a list', insertText: 'IN' },
+  { name: 'IN', description: 'Value is in a list', insertText: 'IN ' },
   { name: 'LIKE', description: 'String matches a pattern', insertText: 'LIKE ' },
   { name: 'ILIKE', description: 'Case-insensitive string pattern match', insertText: 'ILIKE ' },
   { name: 'IS NULL', description: 'Value is null', insertText: 'IS NULL' },

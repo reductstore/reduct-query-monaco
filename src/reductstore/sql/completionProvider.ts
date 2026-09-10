@@ -54,7 +54,15 @@ export const getSqlCompletionProvider = () => {
         .replace(/--[^\n]*/g, (match) => ' '.repeat(match.length))
         .replace(/\/\*[\s\S]*?\*\//g, (match) => ' '.repeat(match.length));
 
+      // A "/*" with no matching "*/" left after the replace above means the cursor is
+      // still inside an unterminated block comment - the same treatment as a string that
+      // hasn't been closed yet, since everything after it isn't real SQL to parse
+      const isInsideBlockComment = textWithoutComments.includes('/*');
+
+      // A trailing quote count that's odd means the cursor is inside an unterminated
+      // string literal or quoted identifier
       const isInsideString = (textWithoutComments.match(/'/g) || []).length % 2 === 1;
+      const isInsideQuotedIdentifier = (textWithoutComments.match(/"/g) || []).length % 2 === 1;
 
       // Build suggestions based on context. "." is treated as a separator (not part of
       // the word) so that completing right after "temp." only replaces the segment being
@@ -62,8 +70,8 @@ export const getSqlCompletionProvider = () => {
       const suggestions: MonacoCompletionItem[] = [];
       const range = getWordRange(model, position, /\w/);
 
-      // 1. When typing inside a string literal (no suggestions)
-      if (isInsideString) {
+      // 1. When typing inside a comment, string literal, or quoted identifier (no suggestions)
+      if (isInsideBlockComment || isInsideString || isInsideQuotedIdentifier) {
         return { suggestions: [] };
       }
 
@@ -86,8 +94,12 @@ export const getSqlCompletionProvider = () => {
 
       let zone = 'NONE';
       let zoneIndex = -1;
+      let lastSelectIndex = -1;
       for (const anchor of CLAUSE_ANCHORS) {
         const index = lastIndexOfPattern(anchor.pattern);
+        if (anchor.zone === 'SELECT') {
+          lastSelectIndex = index;
+        }
         if (index > zoneIndex) {
           zoneIndex = index;
           zone = anchor.zone;
@@ -97,19 +109,37 @@ export const getSqlCompletionProvider = () => {
       // Every zone other than WITH is only reachable once a SELECT has actually been
       // typed - otherwise a stray word matching a clause keyword (e.g. an identifier
       // named "limit") would be mistaken for that clause with no query around it at all
-      const lastSelectIndex = lastIndexOfPattern('\\bSELECT\\b');
       if (zone !== 'NONE' && zone !== 'WITH' && lastSelectIndex === -1) {
         zone = 'NONE';
       }
 
-      // The word immediately before the cursor (ignoring a trailing space), so a clause
-      // already being typed isn't suggested again - e.g. once "GROUP " is typed, offering
-      // "GROUP BY" again would duplicate it into "GROUP GROUP BY" since the replacement
+      // The run of whole words immediately before the cursor, only when followed by a
+      // trailing space - e.g. "GROUP BY x IS NOT " gives ["IS", "NOT"] - so a clause or
+      // operator already being typed isn't suggested again. Offering "GROUP BY" right
+      // after "GROUP " (or "IS NOT NULL" right after "IS NOT ") would duplicate the words
+      // already there into "GROUP GROUP BY" / "IS NOT IS NOT NULL", since the replacement
       // range collapses to the cursor position right after the trailing space
-      const lastWordMatch = /([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(textWithoutStrings);
-      const lastTypedWord = lastWordMatch ? lastWordMatch[1].toUpperCase() : '';
-      const isAlreadyTyped = (label: string) =>
-        lastTypedWord !== '' && label.split(' ')[0].toUpperCase() === lastTypedWord;
+      const trailingWordsMatch = /([A-Za-z_][A-Za-z0-9_]*(?:\s+[A-Za-z_][A-Za-z0-9_]*)*)\s+$/.exec(
+        textWithoutStrings,
+      );
+      const trailingTypedWords = trailingWordsMatch
+        ? trailingWordsMatch[1].toUpperCase().split(/\s+/)
+        : [];
+      const isAlreadyTyped = (label: string) => {
+        if (trailingTypedWords.length === 0) {
+          return false;
+        }
+        const labelWords = label.toUpperCase().split(' ');
+        const overlap = Math.min(trailingTypedWords.length, labelWords.length);
+        for (let words = 1; words <= overlap; words++) {
+          const typedTail = trailingTypedWords.slice(trailingTypedWords.length - words).join(' ');
+          const labelHead = labelWords.slice(0, words).join(' ');
+          if (typedTail === labelHead) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       // sortText only controls the display order of the dropdown list (Monaco sorts
       // suggestions by comparing this string like a dictionary would). Rather than pick
@@ -133,8 +163,21 @@ export const getSqlCompletionProvider = () => {
         });
       };
 
+      // A function like "ENTRY()" is already typed either once fully closed ("ENTRY()")
+      // or mid-way through its own parentheses ("ENTRY(") - both would duplicate if the
+      // suggestion were inserted fresh at the cursor right after them
+      const isFunctionAlreadyTyped = (name: string) => {
+        const trimmedBefore = textWithoutStrings.trimEnd().toUpperCase();
+        const upperName = name.toUpperCase();
+        const openForm = upperName.endsWith('()') ? upperName.slice(0, -1) : upperName;
+        return trimmedBefore.endsWith(upperName) || trimmedBefore.endsWith(openForm);
+      };
+
       const pushFunctions = () => {
         SQL_FUNCTIONS.forEach((fn) => {
+          if (isFunctionAlreadyTyped(fn.name)) {
+            return;
+          }
           suggestions.push({
             label: fn.name,
             kind: CompletionItemKind.Function,

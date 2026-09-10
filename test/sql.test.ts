@@ -364,4 +364,37 @@ describe('getSqlCompletionProvider', () => {
       expect(s.range.endColumn).toBe(line.length + 1);
     });
   });
+
+  it('should not offer IS NOT NULL again right after "IS NOT " has been typed', () => {
+    const labels = complete('SELECT * FROM ENTRY() WHERE x IS NOT ').suggestions.map(
+      (s) => s.label,
+    );
+    expect(labels).not.toContain('IS NOT NULL');
+  });
+
+  it('should not suggest anything inside an unterminated block comment', () => {
+    const result = complete('SELECT * FROM ENTRY() /* draft WHERE ');
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('should not suggest anything inside an unterminated double-quoted identifier', () => {
+    const result = complete('SELECT * FROM ENTRY() WHERE "unterminated WHERE ');
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('should insert IN with a trailing space, like the other multi-char filter operators', () => {
+    const inSuggestion = complete('SELECT * FROM ENTRY() WHERE x ').suggestions.find(
+      (s) => s.label === 'IN',
+    );
+    expect(inSuggestion?.insertText).toBe('IN ');
+  });
+
+  it('should not offer ENTRY() again once it has already been typed in the FROM zone', () => {
+    expect(complete('SELECT * FROM ENTRY(').suggestions.map((s) => s.label)).not.toContain(
+      'ENTRY()',
+    );
+    expect(complete('SELECT * FROM ENTRY() ').suggestions.map((s) => s.label)).not.toContain(
+      'ENTRY()',
+    );
+  });
 });
