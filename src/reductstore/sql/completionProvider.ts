@@ -278,9 +278,9 @@ export const getSqlCompletionProvider = () => {
           pushSetOperations();
           break;
 
-        // 6. Join target (after JOIN, before ON): only ENTRY() or the join condition
+        // 6. Join target (after JOIN, before ON): ENTRY() is only suggested after FROM,
+        // so only the join condition is offered here
         case 'JOIN':
-          pushFunctions();
           pushClause('ON');
           break;
 

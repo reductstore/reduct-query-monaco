@@ -167,8 +167,8 @@ describe('getSqlCompletionProvider', () => {
     ]);
   });
 
-  it('should suggest exactly ENTRY() and ON in the JOIN zone', () => {
-    expectExactLabels(complete('SELECT * FROM ENTRY() LEFT JOIN '), ['ENTRY()', 'ON']);
+  it('should suggest only ON in the JOIN zone (ENTRY() only shows after FROM)', () => {
+    expectExactLabels(complete('SELECT * FROM ENTRY() LEFT JOIN '), ['ON']);
   });
 
   it('should suggest the full condition set plus later clauses in the ON zone', () => {
