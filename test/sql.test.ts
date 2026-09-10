@@ -146,8 +146,12 @@ describe('getSqlCompletionProvider', () => {
     expectExactLabels(complete('WITH '), ['AS']);
   });
 
-  it('should suggest exactly *, DISTINCT, AS and FROM in the SELECT zone', () => {
-    expectExactLabels(complete('SELECT '), ['*', 'DISTINCT', 'AS', 'FROM']);
+  it('should suggest exactly * and DISTINCT right after SELECT (AS/FROM need a column first)', () => {
+    expectExactLabels(complete('SELECT '), ['*', 'DISTINCT']);
+  });
+
+  it('should suggest AS and FROM once a column has been started', () => {
+    expectExactLabels(complete('SELECT col1'), ['*', 'AS', 'FROM']);
   });
 
   it('should suggest ENTRY(), joins, and later clauses in the FROM zone', () => {
@@ -396,5 +400,40 @@ describe('getSqlCompletionProvider', () => {
     expect(complete('SELECT * FROM ENTRY() ').suggestions.map((s) => s.label)).not.toContain(
       'ENTRY()',
     );
+  });
+
+  it('should not offer ENTRY() again once an alias has been given to it', () => {
+    expect(complete('SELECT * FROM ENTRY() e ').suggestions.map((s) => s.label)).not.toContain(
+      'ENTRY()',
+    );
+  });
+
+  it('should not offer = again right after = has just been typed', () => {
+    expect(
+      complete('SELECT * FROM ENTRY() WHERE x = ').suggestions.map((s) => s.label),
+    ).not.toContain('=');
+  });
+
+  it('should not offer = again after a string value containing a keyword-like word', () => {
+    // regression check for the masked-string-looks-like-whitespace edge case
+    expect(
+      complete("SELECT * FROM ENTRY() WHERE message = 'Selected from cache' ").suggestions.map(
+        (s) => s.label,
+      ),
+    ).toContain('=');
+  });
+
+  it('should move straight to the next clause after CROSS JOIN, without ON', () => {
+    expectExactLabels(complete('SELECT * FROM ENTRY() CROSS JOIN '), [
+      'WHERE',
+      'GROUP BY',
+      'ORDER BY',
+      'LIMIT',
+      ...SET_OP_LABELS,
+    ]);
+  });
+
+  it('should still suggest ON for every other join type', () => {
+    expectExactLabels(complete('SELECT * FROM ENTRY() LEFT JOIN '), ['ON']);
   });
 });

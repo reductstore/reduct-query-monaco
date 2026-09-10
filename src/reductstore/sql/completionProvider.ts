@@ -28,6 +28,64 @@ const CLAUSE_ANCHORS: { zone: string; pattern: string }[] = [
 
 const SET_OPERATIONS = ['UNION', 'UNION ALL', 'INTERSECT', 'EXCEPT'];
 
+type MaskState = 'normal' | 'string' | 'identifier' | 'lineComment' | 'blockComment';
+
+// Single left-to-right pass masking strings, quoted identifiers, and comments, so a
+// delimiter that's just literal text inside one of them isn't mistaken for a real one.
+// Masked characters become "#", never a real space, so a masked span right before the
+// cursor is never confused with whitespace the user actually typed (see isAlreadyTyped).
+const MASK_CHAR = '#';
+
+const maskNonCode = (text: string): { masked: string; endState: MaskState } => {
+  let masked = '';
+  let state: MaskState = 'normal';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (state === 'normal') {
+      if (ch === "'") {
+        state = 'string';
+        masked += MASK_CHAR;
+      } else if (ch === '"') {
+        state = 'identifier';
+        masked += MASK_CHAR;
+      } else if (ch === '-' && next === '-') {
+        state = 'lineComment';
+        masked += MASK_CHAR.repeat(2);
+        i++;
+      } else if (ch === '/' && next === '*') {
+        state = 'blockComment';
+        masked += MASK_CHAR.repeat(2);
+        i++;
+      } else {
+        masked += ch;
+      }
+      continue;
+    }
+    if (ch === '\n') {
+      masked += '\n';
+      if (state === 'lineComment') {
+        state = 'normal';
+      }
+      continue;
+    }
+    if (state === 'string' && ch === "'") {
+      state = 'normal';
+      masked += MASK_CHAR;
+    } else if (state === 'identifier' && ch === '"') {
+      state = 'normal';
+      masked += MASK_CHAR;
+    } else if (state === 'blockComment' && ch === '*' && next === '/') {
+      state = 'normal';
+      masked += MASK_CHAR.repeat(2);
+      i++;
+    } else {
+      masked += MASK_CHAR;
+    }
+  }
+  return { masked, endState: state };
+};
+
 export const getSqlCompletionProvider = () => {
   return {
     triggerCharacters: [' ', '.', ','],
@@ -46,23 +104,11 @@ export const getSqlCompletionProvider = () => {
       const currentLine = model.getLineContent(position.lineNumber);
       textBeforeCursor += currentLine.substring(0, position.column - 1);
 
-      // Blank out comments before anything else looks at the text - otherwise an
-      // apostrophe inside a "-- ..." comment (e.g. "don't") would flip the quote-parity
-      // check below and freeze suggestions for the rest of the document, and a clause
-      // keyword written inside a comment would be mistaken for a real one
-      const textWithoutComments = textBeforeCursor
-        .replace(/--[^\n]*/g, (match) => ' '.repeat(match.length))
-        .replace(/\/\*[\s\S]*?\*\//g, (match) => ' '.repeat(match.length));
-
-      // A "/*" with no matching "*/" left after the replace above means the cursor is
-      // still inside an unterminated block comment - the same treatment as a string that
-      // hasn't been closed yet, since everything after it isn't real SQL to parse
-      const isInsideBlockComment = textWithoutComments.includes('/*');
-
-      // A trailing quote count that's odd means the cursor is inside an unterminated
-      // string literal or quoted identifier
-      const isInsideString = (textWithoutComments.match(/'/g) || []).length % 2 === 1;
-      const isInsideQuotedIdentifier = (textWithoutComments.match(/"/g) || []).length % 2 === 1;
+      // Find which clause the cursor is currently in (word-boundary match on text with
+      // closed string literals, quoted identifiers, and comments masked out, so
+      // identifiers like "from_id", quoted identifiers like "from", and quoted or
+      // commented-out values aren't mistaken for keywords)
+      const { masked: textWithoutStrings, endState } = maskNonCode(textBeforeCursor);
 
       // Build suggestions based on context. "." is treated as a separator (not part of
       // the word) so that completing right after "temp." only replaces the segment being
@@ -71,17 +117,10 @@ export const getSqlCompletionProvider = () => {
       const range = getWordRange(model, position, /\w/);
 
       // 1. When typing inside a comment, string literal, or quoted identifier (no suggestions)
-      if (isInsideBlockComment || isInsideString || isInsideQuotedIdentifier) {
+      if (endState !== 'normal') {
         return { suggestions: [] };
       }
 
-      // Find which clause the cursor is currently in (word-boundary match on text with
-      // closed string literals and quoted identifiers blanked out, so identifiers like
-      // "from_id", quoted identifiers like "from", and quoted values like
-      // 'Selected from cache' aren't mistaken for keywords)
-      const textWithoutStrings = textWithoutComments
-        .replace(/'[^']*'/g, (match) => ' '.repeat(match.length))
-        .replace(/"[^"]*"/g, (match) => ' '.repeat(match.length));
       const lastIndexOfPattern = (pattern: string): number => {
         const regex = new RegExp(pattern, 'gi');
         let lastIndex = -1;
@@ -113,6 +152,10 @@ export const getSqlCompletionProvider = () => {
         zone = 'NONE';
       }
 
+      const isCrossJoin =
+        zone === 'JOIN' &&
+        /\bCROSS\s+JOIN$/i.test(textWithoutStrings.slice(0, zoneIndex + 'JOIN'.length));
+
       // The run of whole words immediately before the cursor, only when followed by a
       // trailing space - e.g. "GROUP BY x IS NOT " gives ["IS", "NOT"] - so a clause or
       // operator already being typed isn't suggested again. Offering "GROUP BY" right
@@ -125,7 +168,13 @@ export const getSqlCompletionProvider = () => {
       const trailingTypedWords = trailingWordsMatch
         ? trailingWordsMatch[1].toUpperCase().split(/\s+/)
         : [];
+      const trailingSymbolMatch = /([=!<>]+)\s+$/.exec(textWithoutStrings);
+      const trailingTypedSymbol = trailingSymbolMatch ? trailingSymbolMatch[1] : '';
+
       const isAlreadyTyped = (label: string) => {
+        if (trailingTypedSymbol !== '' && label === trailingTypedSymbol) {
+          return true;
+        }
         if (trailingTypedWords.length === 0) {
           return false;
         }
@@ -163,14 +212,11 @@ export const getSqlCompletionProvider = () => {
         });
       };
 
-      // A function like "ENTRY()" is already typed either once fully closed ("ENTRY()")
-      // or mid-way through its own parentheses ("ENTRY(") - both would duplicate if the
-      // suggestion were inserted fresh at the cursor right after them
+      const textSinceZoneStart = textWithoutStrings.slice(zoneIndex).toUpperCase();
       const isFunctionAlreadyTyped = (name: string) => {
-        const trimmedBefore = textWithoutStrings.trimEnd().toUpperCase();
         const upperName = name.toUpperCase();
         const openForm = upperName.endsWith('()') ? upperName.slice(0, -1) : upperName;
-        return trimmedBefore.endsWith(upperName) || trimmedBefore.endsWith(openForm);
+        return textSinceZoneStart.includes(openForm);
       };
 
       const pushFunctions = () => {
@@ -290,8 +336,8 @@ export const getSqlCompletionProvider = () => {
           pushClause('AS');
           break;
 
-        // 4. Column list (after SELECT, before FROM). DISTINCT is only grammatically
-        // valid immediately after SELECT, before any column has been written
+        // 4. Column list (after SELECT, before FROM). DISTINCT, AS, and FROM are only
+        // grammatically valid once at least one column has started being written
         case 'SELECT': {
           const afterSelect = textWithoutStrings.slice(lastSelectIndex + 'SELECT'.length).trim();
           const canSuggestDistinct =
@@ -300,8 +346,10 @@ export const getSqlCompletionProvider = () => {
           if (canSuggestDistinct) {
             pushClause('DISTINCT');
           }
-          pushClause('AS');
-          pushClause('FROM');
+          if (afterSelect !== '') {
+            pushClause('AS');
+            pushClause('FROM');
+          }
           break;
         }
 
@@ -321,10 +369,18 @@ export const getSqlCompletionProvider = () => {
           pushSetOperations();
           break;
 
-        // 6. Join target (after JOIN, before ON): ENTRY() is only suggested after FROM,
-        // so only the join condition is offered here
+        // 6. Join target (after JOIN, before ON): ENTRY() is only suggested after FROM.
+        // CROSS JOIN never takes an ON condition, so it moves straight to a later clause
         case 'JOIN':
-          pushClause('ON');
+          if (isCrossJoin) {
+            pushClause('WHERE');
+            pushClause('GROUP BY');
+            pushClause('ORDER BY');
+            pushClause('LIMIT');
+            pushSetOperations();
+          } else {
+            pushClause('ON');
+          }
           break;
 
         // 7. Join condition (after ON): same grammar as WHERE
