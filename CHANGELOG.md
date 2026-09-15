@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-15
+
 ### Added
 
 - Monaco completion provider for SQL (`getSqlCompletionProvider`), based on [Apache DataFusion's SQL dialect](https://datafusion.apache.org/user-guide/sql/index.html) plus ReductStore-specific extensions from [ReductSelect](https://www.reduct.store/docs/extensions/official/select-ext)

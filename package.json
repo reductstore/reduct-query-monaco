@@ -1,6 +1,6 @@
 {
   "name": "@reductstore/reduct-query-monaco",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Monaco completion and helpers for ReductStore query language",
   "keywords": [
     "monaco",
