@@ -8,36 +8,8 @@ import {
 } from './operators';
 import { DIRECTIVES } from './directives';
 import { EXAMPLES } from './examples';
-
-interface MonacoModel {
-  getLineContent(lineNumber: number): string;
-}
-
-interface MonacoPosition {
-  lineNumber: number;
-  column: number;
-}
-
-interface MonacoRange {
-  startLineNumber: number;
-  endLineNumber: number;
-  startColumn: number;
-  endColumn: number;
-}
-
-interface MonacoCompletionItem {
-  label: string;
-  kind: number;
-  insertText: string;
-  detail?: string;
-  documentation?: string;
-  range: MonacoRange;
-  sortText?: string;
-}
-
-interface MonacoCompletionResult {
-  suggestions: MonacoCompletionItem[];
-}
+import { MonacoModel, MonacoPosition, MonacoCompletionItem, MonacoCompletionResult } from './types';
+import { getWordRange } from './wordRange';
 
 export const getCompletionProvider = () => {
   return {
@@ -61,25 +33,9 @@ export const getCompletionProvider = () => {
       // Check if at the very start of the document
       const isDocumentStart = isEmpty && position.lineNumber === 1;
 
-      // Calculate proper range to replace partial text
-      // Find the start of the current word being typed
-      let wordStart = position.column - 1;
-      while (wordStart > 0) {
-        const char = lineText.charAt(wordStart - 1);
-        if (!/[$@&#\w]/.test(char)) {
-          break;
-        }
-        wordStart--;
-      }
-
       // Build suggestions based on context
       const suggestions: MonacoCompletionItem[] = [];
-      const range: MonacoRange = {
-        startLineNumber: position.lineNumber,
-        endLineNumber: position.lineNumber,
-        startColumn: wordStart + 1,
-        endColumn: position.column,
-      };
+      const range = getWordRange(model, position, /[$@&#\w]/);
 
       // 1. When document is completely empty (suggest complete examples)
       if (isDocumentStart) {
