@@ -99,6 +99,40 @@ This first pass covers the full clause grammar (`WITH`, `SELECT`/`DISTINCT`, `FR
 | `SQL_LOGICAL_OPERATORS`    | `AND`, `OR`, `NOT`                                                                                                                      |
 | `SQL_FILTER_OPERATORS`     | `BETWEEN`, `IN`, `LIKE`, `ILIKE`, `IS NULL`, `IS NOT NULL`                                                                              |
 
+## Release
+
+Release from a clean `main` checkout:
+
+1. Move the relevant entries from `CHANGELOG.md`'s `Unreleased` section to the new version, then commit that change.
+2. Verify the release candidate:
+
+   ```bash
+   npm run fmt:check && npm test
+   ```
+
+3. Bump the version. Use `patch` for fixes, `minor` for backward-compatible features, or `major` for breaking changes:
+
+   ```bash
+   npm version patch
+   ```
+
+   This updates the package manifests, commits the bump, and creates a `vX.Y.Z` tag.
+
+4. Push the commit and its exact new tag:
+
+   ```bash
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+
+5. Publish the tag's checkout:
+
+   ```bash
+   npm publish
+   ```
+
+   Complete npm's browser authentication if prompted. Do not pass `--access public`.
+
 ## License
 
 MIT
